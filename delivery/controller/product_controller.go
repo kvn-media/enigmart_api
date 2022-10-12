@@ -37,13 +37,56 @@ func (pc *ProductController) GetAllProduct(ctx *gin.Context) {
 	})
 }
 
-// func (pc *ProductController) GetProduct(ctx *gin.Context) {
-// 	product := pc.prodUseCase.GetProduct()
-// 	ctx.JSON(http.StatusOK, gin.H {
-// 		"message": "OK",
-// 		"data": product,
-// 	})
-// }
+func (pc *ProductController) UpdateProduct(ctx *gin.Context) {
+	var newProduct *models.Product
+	err := ctx.BindJSON(&newProduct)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"message": err.Error(),
+		})
+	} else {
+		productRes := pc.prodUseCase.UpdateProduct(*newProduct)
+		if (productRes == models.Product{}) {
+			ctx.JSON(http.StatusBadRequest, gin.H{
+				"message": "Id tidak ditemukan",
+			})
+		} else {
+			ctx.JSON(http.StatusOK, gin.H{
+				"message": "OK",
+				"data":    productRes,
+			})
+		}
+	}
+}
+
+func (p *ProductController) DeleteProduct(ctx *gin.Context) {
+	idProduct := ctx.Param("id")
+	responseUc := p.prodUseCase.DeleteProduct(idProduct)
+	if responseUc {
+		ctx.JSON(http.StatusOK, gin.H{
+			"message": "OK",
+		})
+	} else {
+		ctx.JSON(http.StatusBadGateway, gin.H{
+			"message": "id tidak ditemukan",
+		})
+	}
+}
+
+func (p *ProductController) GetProductById(ctx *gin.Context) {
+	idProduct := ctx.Param("id")
+	responseUc := p.prodUseCase.GetProductById(idProduct)
+	if (responseUc == models.Product{}) {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"message": "id tidak ditemukan",
+		})
+	} else {
+		ctx.JSON(http.StatusOK, gin.H{
+			"message": "OK",
+			"data":    responseUc,
+		})
+	}
+}
 
 func NewProductController(router *gin.Engine, prodUseCase usecase.ProductUseCase) *ProductController {
 	newProdController := ProductController{
@@ -52,8 +95,8 @@ func NewProductController(router *gin.Engine, prodUseCase usecase.ProductUseCase
 	}
 	router.POST("/product", newProdController.CreateNewProduct)
 	router.GET("/product", newProdController.GetAllProduct)
-	// router.GET("/product/:id", newProdController.GetProduct)
-	// router.DELETE("/product/:id", newProdController.DeleteProduct)
-	// router.PUT("/product", newProdController.UpdateProduct)
+	router.PUT("/product", newProdController.UpdateProduct)
+	router.DELETE("product/:id",newProdController.DeleteProduct)
+	router.GET("product/:id",newProdController.GetProductById)
 	return &newProdController
 }
