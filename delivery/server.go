@@ -1,32 +1,33 @@
 package delivery
 
 import (
+	"git.enigmacamp.com/enigmart-api/config"
 	"git.enigmacamp.com/enigmart-api/delivery/controller"
-	"git.enigmacamp.com/enigmart-api/repository"
-	"git.enigmacamp.com/enigmart-api/usecase"
+	"git.enigmacamp.com/enigmart-api/manager"
 	"github.com/gin-gonic/gin"
 )
 
 type appServer struct {
-	prodUseCase usecase.ProductUseCase
-	engine      *gin.Engine
-	host        string
+	useCaseManager manager.UseCaseManager
+	engine         *gin.Engine
+	host           string
 }
 
 func Server() *appServer {
 	ginEngine := gin.Default()
-	prodRepo := repository.NewProductRepository()
-	prodUseCase := usecase.NewProductUseCase(prodRepo)
-	host := ":8181"
+	config := config.NewConfig()
+	infra := manager.NewInfraManager(config)
+	repo := manager.NewRepositoryManager(infra)
+	usecase := manager.NewUseCaseManager(repo)
 	return &appServer{
-		prodUseCase: prodUseCase,
-		engine:      ginEngine,
-		host:        host,
+		useCaseManager: usecase,
+		engine:         ginEngine,
+		host:           config.Url,
 	}
 }
 
 func (a *appServer) initHandlers() {
-	controller.NewProductController(a.engine, a.prodUseCase)
+	controller.NewProductController(a.engine, a.useCaseManager.ProductUseCase())
 }
 
 func (a *appServer) Run() {
